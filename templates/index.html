@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Test page</title>
+  </head>
+  <body>
+    <h1>Hello {{ name }}</h1>
+    <br />
+    <table border="1">
+      <tr>
+        <th>id</th>
+        <th>title</th>
+        <th>price</th>
+      </tr>
+      {% for product in products %}
+      <tr>
+        <td>{{product.id}}</td>
+        <td>{{product.title}}</td>
+        <td>{{product.unit_price}}</td>
+        <td>{{product.new_field}}</td>
+
+
+      </tr>
+
+      {% endfor%}
+    </table>
+
+    {{ result }}
+  </body>
+</html>

@@ -1,5 +1,8 @@
 from django.db import models
 from django.core.validators import MinValueValidator
+from uuid import uuid4
+from django.conf import settings
+
 
 class Promotion(models.Model):
     description = models.CharField(max_length=255)
@@ -9,25 +12,27 @@ class Promotion(models.Model):
 class Collection(models.Model):
     title = models.CharField(max_length=255)
     feature_product = models.ForeignKey(
-        "Product", on_delete=models.SET_NULL, null=True,blank=True, related_name="+"
+        "Product", on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
     )
-    
+
     def __str__(self):
         return self.title
-    
+
     class Meta:
-        ordering=["title"]
+        ordering = ["title"]
 
 
 class Product(models.Model):
     title = models.CharField(max_length=255)
-    slug=models.CharField(max_length=30)
-    description = models.SlugField()
-    unit_price = models.DecimalField(max_digits=10, decimal_places=2,validators=[MinValueValidator(1)])
-    inventory = models.IntegerField()
+    slug = models.SlugField()
+    description = models.TextField()
+    unit_price = models.DecimalField(max_digits=10, decimal_places=2)
+    inventory = models.IntegerField(validators=[MinValueValidator(1)])
     last_update = models.DateTimeField(auto_now=True)
-    collection = models.ForeignKey(Collection, on_delete=models.PROTECT)
-    promotion = models.ManyToManyField(Promotion,blank=True)
+    collection = models.ForeignKey(
+        Collection, on_delete=models.PROTECT, related_name="products"
+    )
+    promotion = models.ManyToManyField(Promotion, blank=True)
 
     def __str__(self):
         return self.title
@@ -43,18 +48,15 @@ class Customer(models.Model):
         (MEMBERSHIP_SILVER, "Silver"),
         (MEMBERSHIP_GOLD, "Gold"),
     ]
-    first_name = models.CharField(max_length=255)
-    last_name = models.CharField(max_length=255)
-    email = models.EmailField(unique=True)
     phone = models.CharField(max_length=255)
     birth_date = models.DateField(null=True)
     membership = models.CharField(
         max_length=1, choices=MEMBERSHIP_CHOICES, default=MEMBERSHIP_BRONZE
     )
-    
-    def __str__(self):
-        return f"{self.first_name} {self.last_name}"
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return f"{self.user.first_name} {self.user.last_name}"
 
 
 class Address(models.Model):
@@ -81,19 +83,35 @@ class Order(models.Model):
     )
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
 
+    class Meta:
+        permissions = [("cancel_order", "Can cancel order")]
+
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.PROTECT)
+    order = models.ForeignKey(Order, on_delete=models.PROTECT, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
     unit_price = models.DecimalField(max_digits=6, decimal_places=2)
 
 
 class Cart(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid4)
     created_at = models.DateTimeField(auto_now_add=True)
 
 
 class CartItem(models.Model):
-    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField()
+
+    class Meta:
+        unique_together = [["cart", "product"]]
+
+
+class Review(models.Model):
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="reviews"
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField()
+    date = models.DateField(auto_now_add=True)

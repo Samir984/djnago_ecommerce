@@ -40,27 +40,26 @@ class CollectionAdmin(admin.ModelAdmin):
     search_fields = ["title"]
 
     @admin.display(ordering="products_count")
-    def products_count(seld, collection):
+    def products_count(self, collection):
         url = (
             reverse("admin:store_product_changelist")
             + "?"
             + urlencode({"collection__id": f"{collection.id}"})
         )
         return format_html('<a  href="{}">{}</a>', url, collection.products_count)
-        return collection.products_count
+
 
     def get_queryset(self, request):
-
-        return super().get_queryset(request).annotate(products_count=Count("product"))
+        return super().get_queryset(request).annotate(products_count=Count("products"))
 
 
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
-    list_display = ["first_name", "last_name", "membership"]
+    list_display = ["user__first_name", "user__last_name", "membership"]
     list_editable = ["membership"]
     list_per_page = 10
     search_fields = ["first_name__istartswith", "last_name__istartswith"]
-
+    list_select_related=["user"]
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):

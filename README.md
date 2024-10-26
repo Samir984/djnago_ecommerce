@@ -1,2 +1,2 @@
 # django_ecommerce
- project end up by following tuitorial
+ repo end up by following tuitorial
